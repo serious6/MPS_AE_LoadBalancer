@@ -15,8 +15,10 @@ public class Starter {
 
 	public static void main(String[] args) {
 		try {
-			Monitor monitor = new Monitor(1338, 10);
-			Dispatcher dispatcher = new Dispatcher(1337, 10);
+			Monitor monitor = new Monitor(1338, 4);
+			Dispatcher dispatcher = new Dispatcher(1337, 4);
+			monitor.setDispatcher(dispatcher);
+			dispatcher.setMonitor(monitor);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (Exception e) {

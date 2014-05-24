@@ -3,6 +3,7 @@ package de.hawhamburg.load.tcp;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Observable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,7 +15,7 @@ public abstract class TcpHandler {
 
 	private final ExecutorService executor;
 
-	public TcpHandler(int port, int threadSize) throws IOException {
+	protected TcpHandler(int port, int threadSize) throws IOException {
 		serverSocket = new ServerSocket(port, threadSize);
 		executor = Executors.newFixedThreadPool(threadSize + 1);
 
@@ -49,7 +50,7 @@ public abstract class TcpHandler {
 	 */
 	protected abstract Runnable performOperation(Socket connectionSocket);
 
-	private boolean isInterrupted() {
+	protected boolean isInterrupted() {
 		return interrupted;
 	}
 
@@ -57,7 +58,7 @@ public abstract class TcpHandler {
 		interrupted = true;
 	}
 
-	public int getPort() {
+	protected int getPort() {
 		return serverSocket.getLocalPort();
 	}
 }
