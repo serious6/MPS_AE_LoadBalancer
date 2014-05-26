@@ -1,28 +1,14 @@
 package de.hawhamburg.load;
 
-import java.io.IOException;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import de.hawhamburg.load.dispatcher.Dispatcher;
-import de.hawhamburg.load.monitor.Monitor;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Starter {
 
-	private final Logger logger = LogManager.getLogger(this.getClass()
-			.getName());
-
 	public static void main(String[] args) {
-		try {
-			Monitor monitor = new Monitor(1338, 4);
-			Dispatcher dispatcher = new Dispatcher(1337, 4);
-			monitor.setDispatcher(dispatcher);
-			dispatcher.setMonitor(monitor);
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+        final List<MpsInstance> instances = new ArrayList<MpsInstance>();
+
+        Dispatcher dis = new Dispatcher(1337, instances);
+        new Monitor(1338, dis);
 	}
 }
