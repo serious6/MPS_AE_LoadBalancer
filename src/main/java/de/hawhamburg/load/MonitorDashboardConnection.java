@@ -38,7 +38,7 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
                         .add("key", instance.name)
                         .add("data", Json.createObjectBuilder()
                                         .add("status", instance.status)
-                                        .add("uptime", instance.uptime)
+                                        .add("uptime", instance.getUptime())
                                         .add("requests", instance.requests)
                                         .add("systemLoad", instance.systemLoad)
                         )
@@ -54,7 +54,7 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
             }
         } catch (IOException e) {
             setChanged();
-            notifyObservers();
+            notifyObservers("dashboard lost");
             e.printStackTrace();
         }
     }
@@ -67,7 +67,7 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
         return Json.createReader(new StringReader(request)).readObject();
     }
 
-    private void write(JsonObject response) throws IOException {
+    public void write(JsonObject response) throws IOException {
         outStream.writeBytes(response.toString());
     }
 
@@ -77,7 +77,7 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
             instancesBuilder.add(Json.createObjectBuilder()
                             .add("name", instance.name)
                             .add("status", instance.status)
-                            .add("uptime", instance.uptime)
+                            .add("uptime", instance.getUptime())
                             .add("requests", instance.requests)
                             .add("systemLoad", instance.systemLoad)
             );

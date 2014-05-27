@@ -1,5 +1,6 @@
 package de.hawhamburg.load;
 
+import javax.json.JsonObject;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -9,7 +10,7 @@ public class Monitor implements Observer, Runnable {
 	private int port = 0;
 	private int heartbeatPort = 0;
 	public Dispatcher dispatcher;
-	protected Set<MonitorDashboardConnection> dashboardConnections = Collections.synchronizedSet(new HashSet<MonitorDashboardConnection>());
+	protected HashSet<MonitorDashboardConnection> dashboardConnections = new HashSet<MonitorDashboardConnection>();
 
 	public Monitor(int port, int heartbeatPort) {
         this.port = port;
@@ -26,10 +27,10 @@ public class Monitor implements Observer, Runnable {
             while (true) {
                 Socket connection = socket.accept();
 
-                MonitorDashboardConnection mc = new MonitorDashboardConnection(this, connection);
-                mc.addObserver(this);
-                dashboardConnections.add(mc);
-                new Thread(mc).start();
+                MonitorDashboardConnection mdc = new MonitorDashboardConnection(this, connection);
+                mdc.addObserver(this);
+                dashboardConnections.add(mdc);
+                new Thread(mdc).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -38,7 +39,21 @@ public class Monitor implements Observer, Runnable {
 
     @Override
     public void update(Observable o, Object arg) {
-        dashboardConnections.remove(o);
+        String msg = (String)arg;
+        if (msg.equals("dashboard lost")) {
+            dashboardConnections.remove(o);
+        }
+
+    }
+
+    public void publish(JsonObject response) {
+        for (MonitorDashboardConnection connection : dashboardConnections) {
+            try {
+                connection.write(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public class MonitorHeartbeat implements Observer, Runnable {
@@ -50,7 +65,7 @@ public class Monitor implements Observer, Runnable {
                 while (true) {
                     Socket connection = socket.accept();
 
-                    MonitorMpsConnection mmc = new MonitorMpsConnection(Monitor.this);
+                    MonitorMpsConnection mmc = new MonitorMpsConnection(Monitor.this, connection);
                     new Thread(mmc).start();
                 }
             } catch (IOException e) {

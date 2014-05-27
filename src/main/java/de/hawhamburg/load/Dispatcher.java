@@ -1,5 +1,6 @@
 package de.hawhamburg.load;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -32,8 +33,6 @@ public class Dispatcher implements Observer, Runnable {
             DispatcherMpsConnection dmc = new DispatcherMpsConnection(this, socket);
             dmc.addObserver(this);
             instance.connection = dmc;
-
-            new Thread(dmc).start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -46,19 +45,42 @@ public class Dispatcher implements Observer, Runnable {
             MpsInstance instance = instances.get(roundRobin);
             instance.requests++;
             instance.connection.write(request);
+
+            monitor.publish(Json.createObjectBuilder()
+                    .add("response", "update")
+                    .add("data", Json.createObjectBuilder()
+                        .add("requests", instance.requests)
+                    )
+                    .build());
         }
     }
 
-    public void forwardMpsResponse() {
-
-    }
-
     public void startInstance(String key) {
-        instances.get(instances.indexOf(key)).connection.write("start");
+        MpsInstance instance = instances.get(instances.indexOf(key));
+        if (instance.status.equals("stopped")) {
+            instance.status = "on";
+
+            monitor.publish(Json.createObjectBuilder()
+                    .add("response", "update")
+                    .add("data", Json.createObjectBuilder()
+                        .add("status", instance.status)
+                    )
+                    .build());
+        }
     }
 
     public void stopInstance(String key) {
+        MpsInstance instance = instances.get(instances.indexOf(key));
+        if (instance.status.equals("on")) {
+            instance.status = "stopped";
 
+            monitor.publish(Json.createObjectBuilder()
+                    .add("response", "update")
+                    .add("data", Json.createObjectBuilder()
+                        .add("status", instance.status)
+                    )
+                    .build());
+        }
     }
 
     public void removeInstance(String key) {
