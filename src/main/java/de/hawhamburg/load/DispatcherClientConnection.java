@@ -7,13 +7,13 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Observable;
 
-public class DispatcherMpsConnection extends Observable implements Runnable {
+public class DispatcherClientConnection extends Observable implements Runnable {
     private Dispatcher dispatcher;
     private Socket socket;
     private DataOutputStream outStream;
     private BufferedReader inStream;
 
-    public DispatcherMpsConnection(Dispatcher dispatcher, Socket socket) {
+    public DispatcherClientConnection(Dispatcher dispatcher, Socket socket) {
         this.dispatcher = dispatcher;
         this.socket = socket;
     }
@@ -25,15 +25,15 @@ public class DispatcherMpsConnection extends Observable implements Runnable {
             inStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             while (true) {
-                String response = getResponse();
-
+                String request = getRequest();
+                dispatcher.dispatch(request);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private String getResponse() throws IOException {
+    private String getRequest() throws IOException {
         String request = inStream.readLine();
         if (request == null) {
             throw new IOException();

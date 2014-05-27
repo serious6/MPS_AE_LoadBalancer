@@ -9,7 +9,9 @@ import java.util.Observable;
 import java.util.Observer;
 
 public class Dispatcher implements Observer, Runnable {
+    public Monitor monitor;
     private int port;
+    private int roundRobin;
     protected List<MpsInstance> instances;
 
 	public Dispatcher(int port, List<MpsInstance> instances) {
@@ -29,6 +31,7 @@ public class Dispatcher implements Observer, Runnable {
             Socket socket = new Socket(info[0], Integer.parseInt(info[1]));
             DispatcherMpsConnection dmc = new DispatcherMpsConnection(this, socket);
             dmc.addObserver(this);
+            instance.connection = dmc;
 
             new Thread(dmc).start();
         } catch (IOException e) {
@@ -36,6 +39,18 @@ public class Dispatcher implements Observer, Runnable {
         }
 
         return instance;
+    }
+
+    public void dispatch(String request) {
+        if (!instances.isEmpty()) {
+            MpsInstance instance = instances.get(roundRobin);
+            instance.requests++;
+            instance.connection.write(request);
+        }
+    }
+
+    public void forwardMpsResponse() {
+
     }
 
     public void startInstance(String key) {
@@ -47,7 +62,8 @@ public class Dispatcher implements Observer, Runnable {
     }
 
     public void removeInstance(String key) {
-
+        instances.remove(instances.indexOf(key));
+        roundRobin %= instances.size();
     }
 
     @Override
@@ -57,7 +73,7 @@ public class Dispatcher implements Observer, Runnable {
             while (true) {
                 // Incoming client requests
                 Socket connection = socket.accept();
-                new Thread(new DispatcherConnection(this, connection)).start();
+                new Thread(new DispatcherClientConnection(this, connection)).start();
             }
         } catch (IOException e) {
             e.printStackTrace();

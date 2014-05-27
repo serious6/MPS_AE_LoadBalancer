@@ -8,13 +8,13 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Observable;
 
-public class MonitorConnection extends Observable implements Runnable {
+public class MonitorDashboardConnection extends Observable implements Runnable {
     private Monitor monitor;
     private Socket socket;
     private DataOutputStream outStream;
     private BufferedReader inStream;
 
-    MonitorConnection(Monitor monitor, Socket socket) {
+    MonitorDashboardConnection(Monitor monitor, Socket socket) {
         this.monitor = monitor;
         this.socket = socket;
     }

@@ -5,22 +5,18 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-
 public class Monitor implements Observer, Runnable {
-	private int index = 0;
 	private int port = 0;
-	protected Dispatcher dispatcher;
-	protected HashSet<MonitorConnection> connections = new HashSet<MonitorConnection>();
+	private int heartbeatPort = 0;
+	public Dispatcher dispatcher;
+	protected Set<MonitorDashboardConnection> dashboardConnections = Collections.synchronizedSet(new HashSet<MonitorDashboardConnection>());
 
-	public Monitor(int port, Dispatcher dispatcher) {
+	public Monitor(int port, int heartbeatPort) {
         this.port = port;
-		this.dispatcher = dispatcher;
+        this.heartbeatPort = heartbeatPort;
 
         new Thread(this).start();
+        new Thread(new MonitorHeartbeat()).start();
 	}
 
     @Override
@@ -30,9 +26,9 @@ public class Monitor implements Observer, Runnable {
             while (true) {
                 Socket connection = socket.accept();
 
-                MonitorConnection mc = new MonitorConnection(this, connection);
+                MonitorDashboardConnection mc = new MonitorDashboardConnection(this, connection);
                 mc.addObserver(this);
-                connections.add(mc);
+                dashboardConnections.add(mc);
                 new Thread(mc).start();
             }
         } catch (IOException e) {
@@ -42,6 +38,29 @@ public class Monitor implements Observer, Runnable {
 
     @Override
     public void update(Observable o, Object arg) {
-        connections.remove(o);
+        dashboardConnections.remove(o);
+    }
+
+    public class MonitorHeartbeat implements Observer, Runnable {
+
+        @Override
+        public void run() {
+            try {
+                final ServerSocket socket = new ServerSocket(heartbeatPort);
+                while (true) {
+                    Socket connection = socket.accept();
+
+                    MonitorMpsConnection mmc = new MonitorMpsConnection(Monitor.this);
+                    new Thread(mmc).start();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void update(Observable o, Object arg) {
+
+        }
     }
 }
