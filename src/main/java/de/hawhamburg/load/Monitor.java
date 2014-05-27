@@ -10,7 +10,7 @@ public class Monitor implements Observer, Runnable {
 	private int port = 0;
 	private int heartbeatPort = 0;
 	public Dispatcher dispatcher;
-	protected HashSet<MonitorDashboardConnection> dashboardConnections = new HashSet<MonitorDashboardConnection>();
+	protected final Set<MonitorDashboardConnection> dashboardConnections = Collections.synchronizedSet(new HashSet<MonitorDashboardConnection>());
 
 	public Monitor(int port, int heartbeatPort) {
         this.port = port;
@@ -47,11 +47,14 @@ public class Monitor implements Observer, Runnable {
     }
 
     public void publish(JsonObject response) {
-        for (MonitorDashboardConnection connection : dashboardConnections) {
-            try {
-                connection.write(response);
-            } catch (IOException e) {
-                e.printStackTrace();
+        synchronized (dashboardConnections) {
+            Iterator<MonitorDashboardConnection> i = dashboardConnections.iterator();
+            while (i.hasNext()) {
+                try {
+                    i.next().write(response);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
