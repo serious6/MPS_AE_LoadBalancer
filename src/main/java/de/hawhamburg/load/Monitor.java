@@ -27,6 +27,8 @@ public class Monitor implements Observer, Runnable {
             while (true) {
                 Socket connection = socket.accept();
 
+				System.out.println("Dashboard connected to monitor from: " + connection.getRemoteSocketAddress().toString());
+
                 MonitorDashboardConnection mdc = new MonitorDashboardConnection(this, connection);
                 mdc.addObserver(this);
                 dashboardConnections.add(mdc);

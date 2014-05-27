@@ -7,29 +7,37 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Observable;
 
-public class DispatcherMpsConnection extends Observable {
+public class DispatcherMpsConnection extends Observable implements Runnable {
     private Dispatcher dispatcher;
     private Socket socket;
     private DataOutputStream outStream;
+	private BufferedReader inStream;
+	private String key;
 
-    public DispatcherMpsConnection(Dispatcher dispatcher, Socket socket) {
+    public DispatcherMpsConnection(Dispatcher dispatcher, Socket socket, String key) {
         this.dispatcher = dispatcher;
         this.socket = socket;
-
-        try {
-            outStream = new DataOutputStream(socket.getOutputStream());
-        } catch (IOException e) {
-            setChanged();
-            notifyObservers("mps lost");
-            e.printStackTrace();
-        }
+        this.key = key;
     }
+
+	@Override
+	public void run() {
+		try {
+			outStream = new DataOutputStream(socket.getOutputStream());
+			inStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			inStream.readLine();
+		} catch (IOException e) {
+			setChanged();
+			notifyObservers(key);
+		}
+	}
 
     public void write(String response) {
         try {
             outStream.writeBytes(response);
         } catch (IOException e) {
-            e.printStackTrace();
+			setChanged();
+			notifyObservers(key);
         }
     }
 }

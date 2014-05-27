@@ -37,10 +37,10 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
                         .add("response", "add")
                         .add("key", instance.name)
                         .add("data", Json.createObjectBuilder()
-                                        .add("status", instance.status)
-                                        .add("uptime", instance.getUptime())
-                                        .add("requests", instance.requests)
-                                        .add("systemLoad", instance.systemLoad)
+							.add("status", instance.status)
+							.add("uptime", instance.getUptime())
+							.add("requests", instance.requests)
+							.add("systemLoad", instance.systemLoad)
                         )
                         .build()
                     );
@@ -53,9 +53,10 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
                 }
             }
         } catch (IOException e) {
-            setChanged();
+			System.out.println("dashboard lost");
+
+			setChanged();
             notifyObservers("dashboard lost");
-            e.printStackTrace();
         }
     }
 
@@ -64,24 +65,28 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
         if (request == null) {
             throw new IOException();
         }
+		System.out.println("From Dashboard: " + request);
         return Json.createReader(new StringReader(request)).readObject();
     }
 
     public void write(JsonObject response) throws IOException {
-        outStream.writeBytes(response.toString());
+		System.out.println("To Dashboard: " + response.toString());
+        outStream.writeBytes(response.toString() + "\n");
     }
 
     private JsonObject getCompleteList() {
         JsonArrayBuilder instancesBuilder = Json.createArrayBuilder();
-        for (MpsInstance instance : monitor.dispatcher.instances) {
-            instancesBuilder.add(Json.createObjectBuilder()
-                            .add("name", instance.name)
-                            .add("status", instance.status)
-                            .add("uptime", instance.getUptime())
-                            .add("requests", instance.requests)
-                            .add("systemLoad", instance.systemLoad)
-            );
-        }
+		synchronized (monitor.dispatcher.instances) {
+			for (MpsInstance instance : monitor.dispatcher.instances) {
+				instancesBuilder.add(Json.createObjectBuilder()
+					.add("name", instance.name)
+					.add("status", instance.status)
+					.add("uptime", instance.getUptime())
+					.add("requests", instance.requests)
+					.add("systemLoad", instance.systemLoad)
+				);
+			}
+		}
 
         return Json.createObjectBuilder()
             .add("response", "completeList")

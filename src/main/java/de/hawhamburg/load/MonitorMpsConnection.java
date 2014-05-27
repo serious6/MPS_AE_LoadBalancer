@@ -1,5 +1,6 @@
 package de.hawhamburg.load;
 
+import javax.json.Json;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -24,14 +25,24 @@ public class MonitorMpsConnection implements Runnable {
             while (true) {
                 String request = getRequest();
 
-                List<MpsInstance> instances = monitor.dispatcher.instances;
-                int index = instances.indexOf(request);
-                if (index != -1) {
-                    instances.get(index).heartbeat();
-                }
+				synchronized (monitor.dispatcher.instances) {
+					int index = monitor.dispatcher.findMpsInstance(request);
+					if (index != -1) {
+						MpsInstance instance = monitor.dispatcher.instances.get(index);
+						instance.heartbeat();
+						monitor.publish(Json.createObjectBuilder()
+							.add("response", "update")
+							.add("key", instance.name)
+							.add("data", Json.createObjectBuilder()
+								.add("uptime", instance.getUptime()))
+							.build()
+						);
+					}
+				}
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("heartbeat lost");
+			// todo
         }
     }
 

@@ -14,10 +14,6 @@ public class MpsInstance {
         status = "off";
     }
 
-    public boolean equals(Object obj) {
-        return obj instanceof MpsInstance && ((MpsInstance) obj).name.equals(name);
-    }
-
     public void heartbeat() {
 
     }
