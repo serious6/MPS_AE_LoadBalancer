@@ -40,4 +40,12 @@ public class DispatcherMpsConnection extends Observable implements Runnable {
 			notifyObservers(key);
         }
     }
+
+	public void close() {
+		try {
+			socket.close();
+		} catch (IOException e) {
+			// ?
+		}
+	}
 }

@@ -41,8 +41,7 @@ public class MonitorMpsConnection implements Runnable {
 				}
             }
         } catch (IOException e) {
-            System.out.println("heartbeat lost");
-			// todo
+			// who cares?
         }
     }
 

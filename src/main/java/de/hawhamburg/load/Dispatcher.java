@@ -8,6 +8,9 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class Dispatcher implements Observer, Runnable {
     public Monitor monitor;
@@ -45,17 +48,19 @@ public class Dispatcher implements Observer, Runnable {
 
     public void dispatch(String request) {
 		MpsInstance instance = getNextInstanceRR();
-		instance.requests++;
-		instance.connection.write(request);
+		if (instance != null) {
+			instance.requests++;
+			instance.connection.write(request);
 
-		monitor.publish(Json.createObjectBuilder()
-			.add("response", "update")
-			.add("key", instance.name)
-			.add("data", Json.createObjectBuilder()
-				.add("requests", instance.requests)
-			)
-			.build()
-		);
+			monitor.publish(Json.createObjectBuilder()
+				.add("response", "update")
+				.add("key", instance.name)
+				.add("data", Json.createObjectBuilder()
+					.add("requests", instance.requests)
+				)
+				.build()
+			);
+		}
     }
 
 	private MpsInstance getNextInstanceRR() {
@@ -105,7 +110,10 @@ public class Dispatcher implements Observer, Runnable {
     }
 
     public void removeInstance(String key) {
-        instances.remove(findMpsInstance(key));
+		int index = findMpsInstance(key);
+		MpsInstance instance = instances.get(index);
+		instance.connection.close();
+        instances.remove(index);
         roundRobin %= instances.size();
 
 		monitor.publish(Json.createObjectBuilder()
@@ -130,9 +138,29 @@ public class Dispatcher implements Observer, Runnable {
     }
 
     @Override
+	/**
+	 * dispatcher lost connection to an mps instance
+	 */
     public void update(Observable o, Object arg) {
 		String key = (String)arg;
+		int index = findMpsInstance(key);
+		// won't find instance when triggered by removeInstance(). instance.connection.close()
+		if (index != -1) {
+			MpsInstance instance = instances.get(index);
+			instance.status = "off";
+			monitor.publish(Json.createObjectBuilder()
+							.add("response", "update")
+							.add("key", key)
+							.add("data", Json.createObjectBuilder()
+											.add("status", instance.status)
+							)
+							.build()
+			);
+			o.deleteObserver(this);
 
+			MpsConnectionRetry mcr = new MpsConnectionRetry(instance);
+			mcr.future = Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(mcr, 0, 1, TimeUnit.SECONDS);
+		}
     }
 
 	public int findMpsInstance(String key) {
@@ -144,6 +172,49 @@ public class Dispatcher implements Observer, Runnable {
 				}
 			}
 			return -1;
+		}
+	}
+
+	public class MpsConnectionRetry implements Runnable {
+		public Future<?> future;
+
+		private MpsInstance instance;
+		private String host;
+		private int port;
+
+		MpsConnectionRetry(MpsInstance instance) {
+			this.instance = instance;
+
+			String[] info = instance.name.split(":");
+			host = info[0];
+			port = Integer.parseInt(info[1]);
+		}
+
+		@Override
+		public void run() {
+
+			Socket socket = null;
+			try {
+				socket = new Socket(host, port);
+				DispatcherMpsConnection dmc = new DispatcherMpsConnection(Dispatcher.this, socket, instance.name);
+				dmc.addObserver(Dispatcher.this);
+				instance.status = "on";
+				instance.connection = dmc;
+
+				monitor.publish(Json.createObjectBuilder()
+					.add("response", "update")
+					.add("key", instance.name)
+					.add("data", Json.createObjectBuilder()
+						.add("status", instance.status)
+					)
+					.build()
+				);
+
+				new Thread(dmc).start();
+				future.cancel(false);
+			} catch (IOException e) {
+				// still no connection :(
+			}
 		}
 	}
 }
