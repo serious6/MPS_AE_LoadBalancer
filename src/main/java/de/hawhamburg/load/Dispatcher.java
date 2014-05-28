@@ -150,12 +150,12 @@ public class Dispatcher implements Observer, Runnable {
 			MpsInstance instance = instances.get(index);
 			instance.status = "off";
 			monitor.publish(Json.createObjectBuilder()
-							.add("response", "update")
-							.add("key", key)
-							.add("data", Json.createObjectBuilder()
-											.add("status", instance.status)
-							)
-							.build()
+				.add("response", "update")
+				.add("key", key)
+				.add("data", Json.createObjectBuilder()
+					.add("status", instance.status)
+				)
+				.build()
 			);
 			o.deleteObserver(this);
 
