@@ -27,8 +27,7 @@ public class Dispatcher implements Observer, Runnable {
 
     public MpsInstance addInstance(JsonObject json) {
         String key = json.getString("key");
-        MpsInstance instance = new MpsInstance(key);
-        instances.add(instance);
+		MpsInstance instance = new MpsInstance(key);
 
         String[] info = key.split(":");
         try {
@@ -37,10 +36,12 @@ public class Dispatcher implements Observer, Runnable {
             dmc.addObserver(this);
             instance.status = "on";
             instance.connection = dmc;
+			instances.add(instance);
 
 			new Thread(dmc).start();
         } catch (IOException e) {
-            e.printStackTrace();
+            // offline instance added
+			return null;
         }
 
         return instance;
@@ -114,7 +115,7 @@ public class Dispatcher implements Observer, Runnable {
 		MpsInstance instance = instances.get(index);
 		instance.connection.close();
         instances.remove(index);
-        roundRobin %= instances.size();
+        roundRobin %= Math.max(instances.size(), 1);
 
 		monitor.publish(Json.createObjectBuilder()
 			.add("response", "remove")

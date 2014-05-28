@@ -34,7 +34,7 @@ public class DispatcherMpsConnection extends Observable implements Runnable {
 
     public void write(String response) {
         try {
-            outStream.writeBytes(response);
+            outStream.writeBytes(response + "\n");
         } catch (IOException e) {
 			setChanged();
 			notifyObservers(key);

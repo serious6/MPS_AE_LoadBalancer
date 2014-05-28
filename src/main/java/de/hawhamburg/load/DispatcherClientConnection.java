@@ -26,7 +26,7 @@ public class DispatcherClientConnection extends Observable implements Runnable {
                 dispatcher.dispatch(getRequest());
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            // client disconnect
         }
     }
 

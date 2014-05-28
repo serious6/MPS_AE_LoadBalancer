@@ -33,17 +33,19 @@ public class MonitorDashboardConnection extends Observable implements Runnable {
                     write(getCompleteList());
                 } else if (request.equals("add")) {
                     MpsInstance instance = monitor.dispatcher.addInstance(json);
-                    write(Json.createObjectBuilder()
-                        .add("response", "add")
-                        .add("key", instance.name)
-                        .add("data", Json.createObjectBuilder()
-							.add("status", instance.status)
-							.add("uptime", instance.getUptime())
-							.add("requests", instance.requests)
-							.add("systemLoad", instance.systemLoad)
-                        )
-                        .build()
-                    );
+					if (instance != null) {
+						write(Json.createObjectBuilder()
+							.add("response", "add")
+							.add("key", instance.name)
+							.add("data", Json.createObjectBuilder()
+								.add("status", instance.status)
+								.add("uptime", instance.getUptime())
+								.add("requests", instance.requests)
+								.add("systemLoad", instance.systemLoad)
+							)
+							.build()
+						);
+					}
                 } else if (request.equals("start")) {
                     monitor.dispatcher.startInstance(json.getString("key"));
                 } else if (request.equals("stop")) {
